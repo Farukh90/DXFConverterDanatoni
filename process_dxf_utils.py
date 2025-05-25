@@ -32,4 +32,4 @@ def write_index_safely(index_data, index_json: str):
 
 
 def get_all_dxf_files(root):
-    return Path(root).rglob("*.dxf")
+    return [f for f in Path(root).rglob("*") if f.suffix.lower() == ".dxf"]
