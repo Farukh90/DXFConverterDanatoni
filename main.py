@@ -1,14 +1,8 @@
 import time
 
-from constants import DXF_DIR
+from constants import INDEX_JSON, INPUT_DIR, DELAY_BETWEEN_FILES, CHECK_INTERVAL
 from convert_dxf import convert_dxf_with_bulge
 from process_dxf_utils import get_all_dxf_files, read_index, write_index_safely
-
-# 📁 Настройки
-INPUT_DIR = DXF_DIR
-INDEX_JSON = "index.json"
-CHECK_INTERVAL = 3  # каждые 5 минут
-DELAY_BETWEEN_FILES = 5
 
 
 def main_loop():
