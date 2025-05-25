@@ -1,4 +1,7 @@
 import time
+import shutil
+from tempfile import NamedTemporaryFile
+from pathlib import Path
 
 from constants import INDEX_JSON, INPUT_DIR, DELAY_BETWEEN_FILES, CHECK_INTERVAL
 from convert_dxf import convert_dxf_with_bulge
@@ -19,23 +22,32 @@ def main_loop():
                 if rel_path not in index or index[rel_path] != current_mtime:
                     print(f"📂 Обработка: {rel_path}")
                     try:
-                        convert_dxf_with_bulge(str(input_path), str(input_path))
-                        updated_mtime = input_path.stat().st_mtime
-                        updated_index[rel_path] = updated_mtime
+                        # Создаем временный файл рядом
+                        with NamedTemporaryFile("w", delete=False, suffix=".dxf", dir=input_path.parent, encoding="utf-8") as tmp:
+                            temp_path = Path(tmp.name)
+
+                        # Конвертируем во временный файл
+                        convert_dxf_with_bulge(str(input_path), str(temp_path))
+
+                        # Заменяем оригинал
+                        shutil.move(str(temp_path), str(input_path))
+
+                        # Обновляем mtime после замены
+                        updated_index[rel_path] = input_path.stat().st_mtime
+
                         print(f"✅ Успешно: {rel_path}")
                         time.sleep(DELAY_BETWEEN_FILES)
+
                     except Exception as e:
                         print(f"❌ Ошибка при обработке {rel_path}: {e}")
 
-            # после for input_path in get_all_dxf_files(...), собрать всё в set
+            # Удаление исчезнувших файлов
             existing_files = {f.relative_to(INPUT_DIR).as_posix() for f in get_all_dxf_files(INPUT_DIR)}
-
-            # удалить из index.json все записи, которых больше нет в input/
             for key in list(updated_index.keys()):
                 if key not in existing_files:
                     print(f"🧹 Удалён из index.json (файла уже нет): {key}")
                     del updated_index[key]
-                    time.sleep(DELAY_BETWEEN_FILES)  # ⏱ пауза, если ты отправляешь уведомление
+                    time.sleep(DELAY_BETWEEN_FILES)
 
             write_index_safely(updated_index, INDEX_JSON)
             time.sleep(CHECK_INTERVAL)
